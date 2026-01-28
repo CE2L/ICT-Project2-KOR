@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS healthcheck_ok (id INT PRIMARY KEY);

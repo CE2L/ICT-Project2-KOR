@@ -1,0 +1,5 @@
+.venv/
+.streamlit/
+.env
+*.log
+nohup.out

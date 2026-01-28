@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: music_postgres
+    environment:
+      POSTGRES_DB: music
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d music"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: music_api
+    ports:
+      - "8501:8505"
+    environment:
+      - PG_HOST=db
+      - PG_PORT=5432
+      - PG_DB=music
+      - PG_USER=postgres
+      - PG_PASSWORD=postgres
+      - LASTFM_API_KEY=${LASTFM_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GITHUB_API_KEY=${GITHUB_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/app.py:/app/app.py
+      - ./backend/config.py:/app/config.py
+      - ./backend/db.py:/app/db.py
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: music_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE=http://localhost:8505
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
